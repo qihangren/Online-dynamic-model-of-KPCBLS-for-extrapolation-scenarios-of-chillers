@@ -55,11 +55,14 @@ seed_value = 42
 np.random.seed(seed_value)
 tf.set_random_seed(seed_value)
 num_runs = 1   # Multiple training sessions
+max_epochs = 700
 results_train = []  # Create a list to store the results of multiple runs, and finally take the average of multiple trainings as the final training result
 results_test = []
+train_losses = []   # Store training losses
 for _ in range(num_runs):
     model = create_model()  #Create model instance
-    model.fit(traindata, trainlabel, epochs=500, batch_size=60)  # Training model, verbose=0, the model will not output any information during the training process
+    history = model.fit(traindata, trainlabel, epochs=max_epochs, batch_size=60)  # Training model, verbose=0, the model will not output any information during the training process
+    train_losses.append(history.history['loss'])    # 记录训练损失
     result_train = model.predict(traindata)
     results_train.append(result_train)
     result_test = model.predict(testdata)
@@ -160,7 +163,7 @@ print("Testing results:")
 print(y_pred)
 # endregion
 
-# region Plotting
+# region Plotting experimental results
 # Create a figure and axis objects with a layout of (2, 2)
 fig, axs = plt.subplots(3, 2, figsize=(10, 12))
 
@@ -223,4 +226,26 @@ plt.tight_layout()
 # and does not overlap with each other.
 plt.show()
 # endregion
+
+# region Draw a training loss curve
+plt.plot(np.arange(1, max_epochs + 1), np.mean(train_losses, axis=0))
+plt.title('MLP_Training Loss vs. Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.show()
+# endregion
+
+# 使用对数坐标绘制训练损失曲线
+#plt.figure(figsize=(10, 6))
+#plt.semilogy(np.arange(1, 1001), np.mean(train_losses, axis=0), label='Training Loss')
+#plt.title('Training Loss vs. Epochs (Log Scale)')
+#plt.xlabel('Epochs')
+#plt.ylabel('Loss (Log Scale)')
+#plt.legend()
+#plt.grid()
+#plt.show()
+
+
+train_losses = pd.DataFrame(train_losses)
+#train_losses.to_csv('train_losses_MLP.csv')
 
