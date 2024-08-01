@@ -52,21 +52,28 @@ class MLP(Model):
         return x
 # Custom callback function to stop training when the loss value reaches or falls below the specified value
 class EarlyStoppingAtLoss(Callback):
-    def __init__(self, monitor='loss', verbose=0):
+    def __init__(self, monitor='loss', value=0, verbose=0):
         super(EarlyStoppingAtLoss, self).__init__()
         self.monitor = monitor
+        self.value = value
         self.verbose = verbose
+        self.best = float('inf')
+        self.losses = []  # To store losses over epochs
 
     def on_epoch_end(self, epoch, logs=None):
         current = logs.get(self.monitor)
-        if current is None:
-            print("Early stopping requires %s available!" % self.monitor)
-            return
+        self.losses.append(current)  # Record the loss value
 
-        if current <= self.value:
+        # Check if current loss is lower than the specified threshold value
+        if current < self.value:
             if self.verbose > 0:
-                print("Epoch %05d: early stopping THR" % epoch)
+                print(f'\nEpoch {epoch + 1}: early stopping, loss < {self.value}')
             self.model.stop_training = True
+        else:
+            # Update best loss seen so far
+            if current < self.best:
+                self.best = current
+
 # endregion
 
 # region Dataset processing
@@ -109,8 +116,8 @@ for _ in range(num_runs):
     model.compile(optimizer='adam',
                   loss=loss_wrapper.custom_loss(batch_size))  # When compiling the model, pass the loss function in the loss function wrapper and pass the batch size "batch_size"
     early_stopping = EarlyStoppingAtLoss(monitor='loss', verbose=1)
-    early_stopping.value = 700
-    model.fit(traindata, trainlabel, epochs=500, batch_size=batch_size,callbacks=[early_stopping])  # Training model
+    early_stopping.value = 90
+    model.fit(traindata, trainlabel, epochs=700, batch_size=batch_size,callbacks=[early_stopping])  # Training model
     result_train = model.predict(traindata)
     results_train.append(result_train)
     result_test = model.predict(testdata)
@@ -176,7 +183,7 @@ power = a[0] + a[1] * plr + a[2] * plr ** 2 + a[3] * plr ** 3
 cop = b[0] + b[1] * plr + b[2] * plr ** 2 + b[3] * plr ** 3 + b[4] * plr ** 4
 tco = (QE + power) / (4.187 * testdata[:,4].reshape(-1,1)) + testdata[:,2].reshape(-1,1)
 y_knowledge = np.hstack((tco, power))
-y_test = 0.5 * y_pred + 0.5 * y_knowledge
+y_pred = 0.5 * y_pred + 0.5 * y_knowledge
 # endregion
 
 # region Evaluation indicators for testing results & Store results
@@ -289,3 +296,18 @@ plt.tight_layout()
 plt.show()
 # endregion
 
+# Assuming `early_stopping` is an instance of `EarlyStoppingAtLoss`
+train_losses = early_stopping.losses
+epochs = range(1, len(train_losses) + 1)
+
+plt.figure(figsize=(10, 6))
+plt.plot(epochs, train_losses, marker='o', label='Training Loss')
+plt.title('KPCMLP Training Loss vs Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.grid(True)
+plt.legend()
+plt.show()
+
+train_losses = pd.DataFrame(train_losses)
+train_losses.to_csv('train_losses_KPCMLP.csv')
