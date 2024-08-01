@@ -95,6 +95,7 @@ N2 = 10  # Number of windows in the feature layer
 N3 = 300  # Number of nodes in the enhancement layer
 s = 0.5  # shrink coefficient
 c = 2**-30  # Regularization coefficient
+train_losses = []   # Store training losses
 biasOfInputData = 0.1 * np.ones((traindata.shape[0], 1))  # Initialize the bias of the input layer
 WeightOfFeatureLayer = np.ones((traindata.shape[1] + 1, N1 * N2))  # Initialize the weights of feature layers
 biasOfFeatureLayer = 0.1 * np.ones((traindata.shape[0], 1))  # Initialize the bias of feature layers
@@ -208,8 +209,8 @@ biasOfInputData -= learning_rate * m_db_input_feat_corrected / (
 # endregion
 
 # region Define stop conditions
-desired_loss = 700  # Stop iteration when loss is less than or equal to desired_loss
-max_iterations = 500  # Stop iteration when max_iterations iterations are reached
+desired_loss = 90  # Stop iteration when loss is less than or equal to desired_loss
+max_iterations = 700  # Stop iteration when max_iterations iterations are reached
 # endregion
 
 # region Define variables and store the optimal value in iterations
@@ -247,6 +248,7 @@ for j in range(max_iterations):
     # region  Calculate Customloss
     loss = custom_loss(traindata, trainlabel, OutputOfTrain)
     print("Iteration {}, Loss: {}".format(j + 1, loss))
+    train_losses.append(loss)
     # endregion
     # region If the current loss value is smaller than the minimum loss, update the minimum loss and corresponding weights and biases
     if loss < min_loss:
@@ -313,8 +315,8 @@ for j in range(max_iterations):
     # endregion
 time_end = time.time()
 Training_time = time_end - time_start
-print('KPCBLS Training has been finished!')
-print('The Total KPCBLS Training Time is : ', round(Training_time, 6), ' seconds')
+print('PCBLS Training has been finished!')
+print('The Total PCBLS Training Time is : ', round(Training_time, 6), ' seconds')
 # endregion
 # endregion
 
@@ -509,5 +511,19 @@ plt.tight_layout()
 # as much as possible to ensure that the spacing between subgraphs is appropriate
 # and does not overlap with each other.
 plt.show()
+# endregion
+
+# region Draw a training loss curve
+print("Length of train_losses:", len(train_losses))
+#for loss in train_losses:
+#    print("Type:", type(loss), "Shape:", getattr(loss, 'shape', None))  # Check type and shape
+plt.plot(train_losses, marker='o', linestyle='-')
+plt.title('KPCBLS Training Loss vs. Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.show()
+
+train_losses = pd.DataFrame(train_losses)
+train_losses.to_csv('train_losses_KPCBLS.csv')
 # endregion
 
